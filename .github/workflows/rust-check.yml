@@ -1,0 +1,32 @@
+name: Rust Check
+on:
+  repository_dispatch:
+    types: [run-lint-check]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Private Code (RISKY STEP)
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          repository: ${{ vars.PRIVATE_REPO_OWNER }}/${{ vars.PRIVATE_REPO_NAME }}
+          token: ${{ secrets.PAT_FOR_PRIVATE_ACCESS }}
+          ref: ${{ github.event.client_payload.commit_sha }}
+          persist-credentials: false
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9
+        with:
+          components: clippy, rustfmt
+
+      - name: Cargo Check
+        run: cargo check
+
+      - name: Clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Format
+        run: cargo fmt --check
